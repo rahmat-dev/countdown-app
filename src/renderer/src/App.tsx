@@ -1,5 +1,7 @@
 import { ChangeEvent, CSSProperties, KeyboardEvent, useEffect, useRef, useState } from 'react'
 
+import alert from './assets/alert.wav'
+
 interface TimerForm {
   minutes: string
   seconds: string
@@ -8,6 +10,7 @@ interface TimerForm {
 let timer
 
 function App(): JSX.Element {
+  const alertRef = useRef<HTMLAudioElement>(null)
   const modalTriggerRef = useRef<HTMLInputElement>(null)
   const [timerForm, setTimerForm] = useState<TimerForm>({ minutes: '', seconds: '' })
   const [countdown, setCountdown] = useState<number>(0)
@@ -17,6 +20,9 @@ function App(): JSX.Element {
   useEffect(() => {
     if (countdown === 0 && isCounting) {
       reset()
+      setTimeout(() => {
+        alertRef.current?.play()
+      }, 1000)
     }
   }, [countdown])
 
@@ -73,6 +79,10 @@ function App(): JSX.Element {
 
   return (
     <div className="container bg-slate-900 h-screen grid place-items-center">
+      <audio className="hidden" ref={alertRef}>
+        <source src={alert} />
+      </audio>
+
       <input type="checkbox" className="modal-toggle" ref={modalTriggerRef} />
       <div className="modal">
         <div className="modal-box flex w-fit max-h-fit gap-2">
@@ -103,6 +113,7 @@ function App(): JSX.Element {
               name="seconds"
               value={timerForm.seconds}
               onChange={handleChangeForm}
+              onKeyDown={onKeyDown}
             />
           </div>
           <div>
