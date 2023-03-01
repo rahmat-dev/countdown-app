@@ -1,13 +1,27 @@
-import { ChangeEvent, CSSProperties, KeyboardEvent, useRef, useState } from 'react'
+import { ChangeEvent, CSSProperties, KeyboardEvent, useEffect, useRef, useState } from 'react'
 
 interface TimerForm {
   minutes: string
   seconds: string
 }
 
+let timer
+
 function App(): JSX.Element {
   const modalTriggerRef = useRef<HTMLInputElement>(null)
   const [timerForm, setTimerForm] = useState<TimerForm>({ minutes: '', seconds: '' })
+  const [countdown, setCountdown] = useState<number>(0)
+  const [isCounting, setIsCounting] = useState<boolean>(false)
+  const [isPaused, setIsPaused] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (countdown === 0 && isCounting) {
+      reset()
+    }
+  }, [countdown])
+
+  const minutes = Math.floor(countdown / 60)
+  const seconds = countdown % 60
 
   const toggleModal = (): void => {
     modalTriggerRef.current?.click()
@@ -21,7 +35,7 @@ function App(): JSX.Element {
   }
 
   const handleSaveTimer = (): void => {
-    console.log({ timerForm })
+    setCountdown(+timerForm.minutes * 60 + +timerForm.seconds)
     toggleModal()
   }
 
@@ -29,6 +43,32 @@ function App(): JSX.Element {
     if (['e', '-', ',', '.'].includes(e.key)) {
       e.preventDefault()
     }
+  }
+
+  const start = (): void => {
+    setIsCounting(true)
+    timer = setInterval(() => {
+      setCountdown((_countdown) => _countdown - 1)
+    }, 1000)
+  }
+
+  const reset = (): void => {
+    setCountdown(0)
+    setIsCounting(false)
+    setIsPaused(false)
+    clearInterval(timer)
+  }
+
+  const pause = (): void => {
+    setIsPaused(true)
+    clearInterval(timer)
+  }
+
+  const resume = (): void => {
+    setIsPaused(false)
+    timer = setInterval(() => {
+      setCountdown((_countdown) => _countdown - 1)
+    }, 1000)
   }
 
   return (
@@ -81,20 +121,38 @@ function App(): JSX.Element {
           <button className="btn btn-sm btn-info" onClick={toggleModal}>
             Set Timer
           </button>
-          <button className="btn btn-sm btn-success">Play</button>
-          <button className="btn btn-sm btn-warning">Pause</button>
-          <button className="btn btn-sm btn-error">Reset</button>
+          {!isCounting && (
+            <button
+              className="btn btn-sm btn-success disabled:btn-success disabled:opacity-30"
+              disabled={countdown <= 0}
+              onClick={start}
+            >
+              Start
+            </button>
+          )}
+          {isCounting && (
+            <button className="btn btn-sm btn-warning" onClick={isPaused ? resume : pause}>
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+          )}
+          <button
+            className="btn btn-sm btn-error disabled:btn-error disabled:opacity-30"
+            disabled={!isCounting}
+            onClick={reset}
+          >
+            Reset
+          </button>
         </div>
         <div className="grid grid-flow-col text-center auto-cols-max items-center">
           <div className="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
             <span className="countdown font-mono text-8xl">
-              <span style={{ '--value': 15 } as CSSProperties}></span>
+              <span style={{ '--value': minutes } as CSSProperties}></span>
             </span>
           </div>
           <span className="font-mono text-8xl">:</span>
           <div className="flex flex-col p-2 bg-neutral rounded-box text-neutral-content">
             <span className="countdown font-mono text-8xl">
-              <span style={{ '--value': 15 } as CSSProperties}></span>
+              <span style={{ '--value': seconds } as CSSProperties}></span>
             </span>
           </div>
         </div>
